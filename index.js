@@ -21,7 +21,7 @@ router.post('/unzip', async (ctx, next) => {
         this.throw(400, 'zip url and bucket reqired');
     }
     try {
-        const result = await unzip(base64(bucket), base64(prefix), base64(zip))
+        const result = await unzip(URLSafeBase64.decode(bucket), URLSafeBase64.decode(prefix), URLSafeBase64.decode(zip))
         this.body = result;
     }
     catch (err) {
