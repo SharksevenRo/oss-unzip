@@ -2,6 +2,8 @@ FROM jrottenberg/ffmpeg
 
 RUN apt-get update
 
+RUN apt-get install curl -y
+
 # install fork of gifsicle with better lossless gif support
 ENV NPM_CONFIG_LOGLEVEL info
 ENV NODE_VERSION 8.9.1
@@ -18,8 +20,8 @@ WORKDIR /root/workspace
 
 RUN bash -c 'cd /root/workspace && npm install'
 
-RUN bash -c "npm install pm2 -g"
+# RUN bash -c "npm install pm2 -g"
 
 EXPOSE  9100
 
-ENTRYPOINT pm2 start index.js & /bin/bash
+ENTRYPOINT node index.js && /bin/bash
