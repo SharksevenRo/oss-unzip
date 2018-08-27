@@ -1,56 +1,42 @@
+require('./env')
+var getRawBody = require('raw-body');
+var getFormBody = require("body/form");
+var body = require('body');
 
-require('./env');
-const Koa = require('koa');
-const app = new Koa();
-const Router = require('koa-router');
-const koaBody = require('koa-body');
-const unzip = require('./lib/unzip');
-const router = new Router();
+var unzip = require('./lib/unzip');
 
-const URLSafeBase64 = function(str) {
-    return new Buffer(str, 'base64').toString('utf-8');
-};
-// response
+module.exports.handler = function (req, resp, context) {
+    console.log("hello world");
 
-app.use(koaBody());
-
-router.post('/unzip', async (ctx, next) => {
-    const body = ctx.request.body;
-    const zip = body.url;
-    const bucket = body.bucket;
-    const prefix = body.prefix || '';
-
-    if(process.env.IP_WHITELIST.indexOf(ctx.ip) || (body.token && body.token === process.env.ACCESS_TION)) {
-        if(!zip || ! bucket) {
-            ctx.throw(400, 'zip url and bucket reqired');
-        }
-        try {
-            const result = await unzip(URLSafeBase64(bucket), URLSafeBase64(prefix), URLSafeBase64(zip))
-            ctx.body = result;
-        }
-        catch(err) {
-            console.log(err);
-            ctx.throw(400, '解压失败' + JSON.stringify(err));
-        }
+    var params = {
+        path: req.path,
+        queries: req.queries,
+        headers: req.headers,
+        method: req.method,
+        requestURI: req.url,
+        clientIP: req.clientIP,
     }
-    else {
-        ctx.throw(400, 'unauthorized')
-    }
-});
 
-router.get('/health', async (ctx) => {
-    ctx.body = 'health';
-});
+    getFormBody(req, function (err, body) {
+        for (var key in req.queries) {
+            var value = req.queries[key];
+            resp.setHeader(key, value);
+        }
+        unzip(body.bucket, body.prefix, body.url)
+        .then(() => {
+            resp.send(JSON.stringify(params, null, '    '));
+        })
+    });
 
-app
-.use(router.routes())
-.use(router.allowedMethods());
-
-
-app.listen(9100, function() {
-    console.log('unzip start on 9100');
-});
-
-app.on('error', function(err) {
-    console.log(err)
-});
+    /*
+    getFormBody(req, function(err, formBody) {
+        for (var key in req.queries) {
+          var value = req.queries[key];
+          resp.setHeader(key, value);
+        }
+        params.body = formBody;
+        console.log(formBody);
+        resp.send(JSON.stringify(params));
+    }); 
+    */
+}
